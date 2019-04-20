@@ -14,23 +14,17 @@
 extern const struct bg_gattdb_def bg_gattdb_data;
 
 #define gattdb_service_changed_char             3
-#define gattdb_device_name                      7
-#define gattdb_ota_control                     19
-#define gattdb_tx_power_level                  22
-#define gattdb_Temperature                     25
-#define gattdb_temperature_type                28
-#define gattdb_intermediate_temperature         30
-#define gattdb_measurement_interval            33
-#define gattdb_valid_range                     35
-#define gattdb_tx_power_level_2                38
+#define gattdb_database_hash                    6
+#define gattdb_client_support_features          8
+#define gattdb_device_name                     11
+#define gattdb_ota_control                     31
 
-//#define gattdb_service_changed_char             3
-//#define gattdb_device_name                      7
-//#define gattdb_ota_control                     19
-//#define gattdb_Temperature                             22
-//#define gattdb_temperature_type                25
-//#define gattdb_intermediate_temperature         27
-//#define gattdb_measurement_interval            30
-//#define gattdb_valid_range                     32
+typedef enum
+{
+    mesh_provisioning_service      = 0x0001,
+    mesh_proxy_service             = 0x0002,
+    mesh_default                   = 0x0004,
+    bg_gattdb_data_all_caps = 0x0007
+} bg_gattdb_data_cap_t;
 
 #endif
