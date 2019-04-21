@@ -8,22 +8,22 @@
  * 1) Add scheduler and timer events which can provide a 1Hz update for the display EXTCOMIN pin
  *  	through a call to displayUpdate().  Include your scheduler/timer header files in the top of
  *  	display.c.  #define these values in appropriate header files:
- *  	#define SCHEDULER_SUPPORTS_DISPLAY_UPDATE_EVENT 1	//done
- *  	#define TIMER_SUPPORTS_1HZ_TIMER_EVENT	1			//done
+ *  	#define SCHEDULER_SUPPORTS_DISPLAY_UPDATE_EVENT 1
+ *  	#define TIMER_SUPPORTS_1HZ_TIMER_EVENT	1
  *  	and customize the line timerEnable1HzSchedulerEvent(Scheduler_DisplayUpdate) to make the
- *  	appropriate call to your timer/scheduler routine to start this event.	//Done
+ *  	appropriate call to your timer/scheduler routine to start this event.
  *
  * 2) Add functions gpioEnableDisplay() and gpioSetDisplayExtcomin(bool high) to your gpio.c and
  * 		gpio.h files, and include
- * 		#define GPIO_SET_DISPLAY_EXT_COMIN_IMPLEMENTED 	1	//done
+ * 		#define GPIO_SET_DISPLAY_EXT_COMIN_IMPLEMENTED 	1
  * 		and
- *		#define GPIO_DISPLAY_SUPPORT_IMPLEMENTED		1	//done
+ *		#define GPIO_DISPLAY_SUPPORT_IMPLEMENTED		1
  *		definitions in your gpio.h file
  *		** Note that the Blue Gecko development board uses the same pin for both the sensor and display enable
  *		pins.  This means you cannot disable the sensor for load power management if enabling the display.  Your
  *		GPIO routines need to account for this **
  *
- * 3) Call displayInit() before attempting to write the display and after initializing your timer and //Done
+ * 3) Call displayInit() before attempting to write the display and after initializing your timer and
  * scheduler.
  */
 
@@ -47,12 +47,15 @@ enum display_row {
 	DISPLAY_ROW_PASSKEY,
 	DISPLAY_ROW_ACTION,
 	DISPLAY_ROW_TEMPVALUE,
-	DISPLAY_ROW_MAX,
+	DISPLAY_ROW_TEMP2,
+	DISPLAY_ROW_TEMP3,
+	DISPLAY_ROW_MAX
 };
 
 #if ECEN5823_INCLUDE_DISPLAY_SUPPORT
 void displayInit();
 bool displayUpdate();
+void clearDisplay(void);
 void displayPrintf(enum display_row row, const char *format, ... );
 #else
 static inline void displayInit() { }
