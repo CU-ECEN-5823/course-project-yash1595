@@ -83,7 +83,6 @@
  uint8_t ButtonInitiationFlag;
  uint8_t DisplayButtonState;
  uint32_t update_display;
-
  uint8_t clear_count;
  uint8_t button_flag;
 

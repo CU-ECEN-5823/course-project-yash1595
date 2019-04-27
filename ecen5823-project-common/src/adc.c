@@ -1,16 +1,15 @@
 /*
  * adc.c
  *
- *  Created on: Apr 19, 2019
- *      Author: yashm
+ *  Created on: Apr 21, 2019
+ *      Author: raj
  */
-
-
 #include "adc.h"
 
-/**************************************************************************//**
+
+/**********************************************
  * @brief  Initialize ADC function
- *****************************************************************************/
+ *********************************************/
 void initADC (void)
 {
   adcFinished=false;
@@ -25,7 +24,7 @@ void initADC (void)
   init.prescale = ADC_PrescaleCalc(adcFreq, 0); // Init to max ADC clock for Series 1
 
   initSingle.diff       = false;        // single ended
-  initSingle.reference  = adcRef2V5;    // internal 2.5V reference
+  initSingle.reference  = adcRef5V;    // internal 2.5V reference
   initSingle.resolution = adcRes12Bit;  // 12-bit resolution
   initSingle.acqTime    = adcAcqTime4;  // set acquisition time to meet minimum requirement
 
@@ -34,40 +33,47 @@ void initADC (void)
 
   ADC_Init(ADC0, &init);
   ADC_InitSingle(ADC0, &initSingle);
-//  ADC_IntClear(ADC0,ADC_IF_SINGLE);
+  ADC_IntClear(ADC0,ADC_IF_SINGLE);
   NVIC_EnableIRQ(ADC0_IRQn);
   ADC_IntEnable(ADC0,ADC_IF_SINGLE);
 }
 
 void ADCSample(void)
 {
-
-	//if(!ADC_Initialied_flag)return;
-  // Start ADC conversion
+  NVIC_EnableIRQ(ADC0_IRQn);
+  ADC_IntEnable(ADC0,ADC_IF_SINGLE);
+  millivolts=500;
+  adcFinished=false;
   ADC_Start(ADC0, adcStartSingle);
-
-//  // Wait for conversion to be complete
-//  while(!(ADC0->STATUS & _ADC_STATUS_SINGLEDV_MASK));
-//
-//  // Get ADC result
-//  sample = ADC_DataSingleGet(ADC0);
-//
-//  // Calculate input voltage in mV
-//  millivolts = (sample * 2500) / 4096;
-//  LOG_INFO("ADC:Value:%d",millivolts);
 }
 
+/*********************************************
+ * @brief: Function waits for ADC conversion
+ * 		   to complete.
+ *********************************************/
+#pragma GCC push_options
+#pragma GCC optimize("O0")
+	void WaitForFlag(void)
+	{
+		while(adcFinished==false);
+	}
+#pragma GCC pop_options
+
+
+/*********************************************
+ * @brief: ADC IRQ handler. Reads input in
+ * 		   milli-volts.
+ *********************************************/
 void ADC0_IRQHandler(void)
 {
-	LOG_INFO("here\n");
-	CORE_DECLARE_IRQ_STATE;
-	CORE_ENTER_CRITICAL();
-	/* Clear ADC0 interrupt flag */
+	NVIC_DisableIRQ(LETIMER0_IRQn);
 	uint32_t flags = ADC_IntGet(ADC0);
 	ADC_IntClear(ADC0, flags);
-	/* Read conversion result to clear Single Data Valid flag */
 	sample = ADC_DataSingleGet(ADC0);
-	millivolts = (sample * 2500) / 4096;
+	millivolts = (sample * 5000) / 4096;
 	adcFinished=true;
-  CORE_EXIT_CRITICAL();
+	ADC_IntDisable(ADC0,ADC_IF_SINGLE);
+	NVIC_DisableIRQ(ADC0_IRQn);
+	NVIC_EnableIRQ(LETIMER0_IRQn);
 }
+

@@ -77,6 +77,15 @@
 
 #define RESET_TIME			(2*32768)
 
+#define DOOROPEN	(int16_t)(100)
+#define OVERRIDE	(int16_t)(200)
+#define LED_ON		(int16_t)(300)
+#define SMOKE		(int16_t)(400)
+
+#define SET_VAL		(uint16_t)(0X7D0)
+
+uint8_t override_count;
+
 extern void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt);
 extern void mesh_native_bgapi_init(void);
 extern bool mesh_bgapi_listener(struct gecko_cmd_packet *evt);
@@ -90,7 +99,6 @@ char StringToDisplay[20];
 
 uint16 primary_address = 0;
 uint8 NumOfConn = 0;
-
 uint16_t resp;
 
 char print[3];

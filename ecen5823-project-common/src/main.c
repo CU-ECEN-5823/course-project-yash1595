@@ -11,9 +11,6 @@ extern void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt);
 
 int main(void)
 {
-
-  // Initialize stack
-
 	TimerInitialize();
 
 	gecko_main_init();
@@ -28,15 +25,10 @@ int main(void)
 
 	initADC();
 
-//	while(1)
-//	{
-//		ADCSample();
-//		LOG_INFO("value:%d",millivolts);
-//	}
 
-  /* Infinite loop */
+
   while (1) {
-	struct gecko_cmd_packet *evt = gecko_wait_event();
+	  struct gecko_cmd_packet *evt = gecko_wait_event();
 	bool pass = mesh_bgapi_listener(evt);
 	if (pass) {
 		handle_gecko_event(BGLIB_MSG_ID(evt->header), evt);

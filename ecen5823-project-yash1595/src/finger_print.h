@@ -5,6 +5,12 @@
  *      Author: yashm
  */
 
+/************************* Description **********************
+ *  RX -> P32	- BLACK
+ *  TX -> P30	- RED
+ *  VCC-> 5V
+ *  GNF-> GND
+ ************************************************************/
 #ifndef SRC_FINGER_PRINT_H_
 #define SRC_FINGER_PRINT_H_
 #define YES 0
@@ -12,7 +18,7 @@
 
 #define TIVA_C   NO
 
-#if TIVA_C
+#if (TIVA_C==NO)
 #include "em_usart.h"
 #include "em_cmu.h"
 #include "retargetserial.h"
@@ -96,3 +102,4 @@ extern uint8_t CommandArray[COMMAND_SIZE];
 extern uint8_t ResponseArray[COMMAND_SIZE];
 
 #endif /* SRC_FINGER_PRINT_H_ */
+

@@ -10,6 +10,11 @@
 #if (TIVA_C==NO)
 USART_TypeDef           *finger = USART2;
 
+/*******************************************************
+@brief:	Initializes the sensor with baud of 9600 baud.
+Assigns pins P30 and P32 which are UART2 pins turns on
+LED to check if sensor receives commands.
+**********************************************************/
 void FingerPrintInit(void)
 {
     CMU_ClockEnable(cmuClock_USART2, true);
@@ -22,49 +27,42 @@ void FingerPrintInit(void)
     LOG_INFO("Set the pins\n");
 
     USART_InitAsync_TypeDef UartFinger   =
-            {                                                                                                  \
-                    usartDisable,           /* Enable RX/TX when initialization is complete. */
-                    0,                     /* Use current configured reference clock for configuring baud rate. */
-                    9600,                /* 9600 bits/s. */
-                    usartOVS16,            /* 16x oversampling. */
-                    usartDatabits8,        /* 8 data bits. */
-                    usartNoParity,         /* No parity. */
-                    usartStopbits1,        /* 1 stop bit. */
-                    false,                 /* Do not disable majority vote. */
-                    false,                 /* Not USART PRS input mode. */
-                    usartPrsRxCh0,         /* PRS channel 0. */
-                    false,                 /* Auto CS functionality enable/disable switch */
-                    0,                     /* Auto CS Hold cycles */
-                    0,                     /* Auto CS Setup cycles */
-                    usartHwFlowControlNone /* No HW flow control */                                                       \
-              };
+	{                                                                                                  \
+		usartDisable,
+		0,
+		9600,
+		usartOVS16,
+		usartDatabits8,
+		usartNoParity,
+		usartStopbits1,
+		false,
+		false,
+		usartPrsRxCh0,
+		false,
+		0,
+		0,
+		usartHwFlowControlNone                                                      \
+	  };
 
 
-      LOG_INFO("Set the config\n");
-      USART_InitAsync(USART2,&UartFinger);
+	LOG_INFO("Set the config\n");
+	USART_InitAsync(USART2,&UartFinger);
 
-//    CMU_ClockSelectSet(cmuClock_LFB, cmuSelect_LFXO);
-
-//    CMU_ClockDivSet(cmuClock_USART2,cmuClkDiv_1);
-
-//    UartFinger.enable = usartDisable; //check
-      LOG_INFO("Set the clock source\n");
-
-//    USART_Enable(USART2, usartDisable);//LEUART_Init(USART2, &UartFinger);    //??
-
-      USART2->ROUTELOC0 = ((17)|(17<<8));   //try
-      USART2->ROUTEPEN = ((1<<0) |(1<<1));  //try
+	LOG_INFO("Set the clock source\n");
 
 
-      LOG_INFO("Set the ROUTE pins\n");
+	USART2->ROUTELOC0 = ((17)|(17<<8));   //try
+	USART2->ROUTEPEN = ((1<<0) |(1<<1));  //try
 
-      USART_Enable(USART2, usartEnable);    //check
 
-      LOG_INFO("USART2 Enbaled\n");
+	LOG_INFO("Set the ROUTE pins\n");
 
-    CommandSend(0,CMD_OPEN);
-    CommandResponse(CMD_OPEN); //CMD_DEL_ALL //CMD_CMOS_LED
+	USART_Enable(USART2, usartEnable);
 
+	LOG_INFO("USART2 Enbaled\n");
+
+    CommandSend(1,CMD_OPEN);
+    CommandResponse(CMD_OPEN);
 
     CommandSend(0,CMD_CMOS_LED);
     CommandResponse(CMD_CMOS_LED);
@@ -87,6 +85,11 @@ void FingerPrintInit(void)
 }
 #endif
 
+/****************************************************************
+@brief   :Sends an array of 12 bytes to the senor.
+@param	:It is the parameter for the respective command.
+@cmd_code: This is the hex value of the command to be sent.
+*****************************************************************/
 void CommandSend(uint8_t param,uint8_t cmd_code)
 {
 #if (TIVA_C==YES)
@@ -125,11 +128,13 @@ void CommandSend(uint8_t param,uint8_t cmd_code)
 #else
     LOG_INFO("Sent All Command bytes\n");
 #endif
-
-
-
 }
 
+/******************************************************************
+@brief : Receives the value from the sensor and checks if valid.
+		 A value of 0x30 is success and 0x31 indicates failure.
+@param: Performs operations for separate params received.
+*******************************************************************/
 uint32_t CommandResponse(uint8_t param)
 {
 #if (TIVA_C ==YES)
@@ -150,13 +155,6 @@ uint32_t CommandResponse(uint8_t param)
 #endif
     }
 
-//
-//    for(i=0;i<12;i+=1) //COMMAND_SIZE-5
-//        {
-//            UARTprintf("%x\n",ResponseArray[i]);
-//        }
-
-
     uint32_t Value;
     if(param==CMD_IS_PRESS)
     {
@@ -172,6 +170,10 @@ uint32_t CommandResponse(uint8_t param)
     if(param==CMD_ID)
     {
         Value = ResponseArray[8];
+        for(i=0;i<12;i+=1)
+            {
+            	LOG_INFO("values[i]:%x",ResponseArray[i]);
+            }
         return Value;
     }
 
@@ -180,8 +182,6 @@ uint32_t CommandResponse(uint8_t param)
         Value = ResponseArray[10]-30;
         return Value;
     }
-
-
 
     Value |= ResponseArray[4]<<0;
     Value |= ResponseArray[5]<<8;
@@ -196,7 +196,6 @@ uint32_t CommandResponse(uint8_t param)
     LOG_INFO("Received all Response Bytes\n");
 #endif
     return Value;
-
 }
 
 uint16_t CheckSumCal(uint8_t* Command)
@@ -211,11 +210,28 @@ uint16_t CheckSumCal(uint8_t* Command)
     return checksum;
 }
 
-
+/********************************************************************
+@brief: Adds a new finger print to the data-base.
+   @functions called:
+a.	Turns on LED for taking the readings.
+b.	Checks if finger has been placed in the sensor.
+c.	Waits for finger to be placed.
+d.	Checks the current enroll count and adds 1 to increment it to store a new id.
+e.	Captures image of finger.
+f.	Starts enrollment-1.
+g.	Checks of finger is placed. And asks user to lift finger.
+h.	Waits for user to place finger again.
+i.	Captures finger.
+j.	Starts enrollment-2.
+k.	Checks of finger is placed. And asks user to lift finger.
+l.	Waits for user to place finger again.
+m.	Captures finger.
+n.	Starts enrollment-2.
+o.	Displays if finger was successfully added.
+***************************************************************************/
 void AddFingerPrint(void)
 {
     static uint32_t value=0,wait=0;
-
 
     CommandSend(1,CMD_CMOS_LED);
     CommandResponse(CMD_CMOS_LED);
@@ -253,21 +269,10 @@ void AddFingerPrint(void)
         CommandSend(0,CMD_IS_PRESS);
         value=CommandResponse(CMD_IS_PRESS);
     }
-
-//    UARTprintf("Capture Finger\n");
     CommandSend(0,CMD_CAPTURE_FIN);
     uint32_t resp2=CommandResponse(CMD_CAPTURE_FIN);
-//    if(resp2!=0x1012)UARTprintf("Success capturing\n");
-
-    //SysCtlDelay(2000000);
-
-//    UARTprintf("Enroll-1\n");
     CommandSend(0,CMD_ENROLL_1);
-    CommandResponse(CMD_ENROLL_1); // //SysCtlDelay(2000000);
-
-    //SysCtlDelay(2000000);
-
- //   UARTprintf("IsPress?\n");
+    CommandResponse(CMD_ENROLL_1);
     value=0;
     CommandSend(0,CMD_IS_PRESS);
     value=CommandResponse(CMD_IS_PRESS);
@@ -282,8 +287,6 @@ void AddFingerPrint(void)
         value=CommandResponse(CMD_IS_PRESS);
     }
 
-    //SysCtlDelay(2000000);
-
     value=1;
     CommandSend(0,CMD_IS_PRESS);
     value=CommandResponse(CMD_IS_PRESS);
@@ -297,23 +300,12 @@ void AddFingerPrint(void)
         CommandSend(0,CMD_IS_PRESS);
         value=CommandResponse(CMD_IS_PRESS);
     }
-
-    //SysCtlDelay(2000000);
-
-//    UARTprintf("Capture Finger\n");
     CommandSend(0x00,CMD_CAPTURE_FIN);
     resp2=CommandResponse(CMD_CAPTURE_FIN);
- //   if(resp2!=0x1012)UARTprintf("Success capturing\n");
 
-    //SysCtlDelay(2000000);
-
- //   UARTprintf("Enroll-2\n");
     CommandSend(0,CMD_ENROLL_2);
     CommandResponse(CMD_ENROLL_2);
 
-    //SysCtlDelay(2000000);
-
- //   UARTprintf("IsPress-2?\n");
     value=0;
     CommandSend(0,CMD_IS_PRESS);
     value=CommandResponse(CMD_IS_PRESS);
@@ -328,8 +320,6 @@ void AddFingerPrint(void)
         value=CommandResponse(CMD_IS_PRESS);
     }
 
-    //SysCtlDelay(2000000);
-
     value=1;
     CommandSend(0,CMD_IS_PRESS);
     value=CommandResponse(CMD_IS_PRESS);
@@ -343,17 +333,9 @@ void AddFingerPrint(void)
         CommandSend(0,CMD_IS_PRESS);
         value=CommandResponse(CMD_IS_PRESS);
     }
-
-    //SysCtlDelay(2000000);
-
- //   UARTprintf("Capture Finger\n");
     CommandSend(0,CMD_CAPTURE_FIN);
     resp2=CommandResponse(CMD_CAPTURE_FIN);
-  //  if(resp2!=0x1012)UARTprintf("Success capturing\n");
 
-    //SysCtlDelay(2000000);
-
- //   UARTprintf("Enroll-3\n");
     CommandSend(0,CMD_ENROLL_3);
     CommandResponse(CMD_ENROLL_3);
 
@@ -361,8 +343,16 @@ void AddFingerPrint(void)
     CommandResponse(CMD_CMOS_LED);
 
 }
-
-
+/*************************************************************************
+@brief: Checks if the placed finger print is valid or not.
+@Functions called:
+a.	Turns on LED for taking the readings.
+b.	Checks if finger has been placed in the sensor.
+c.	Waits up-to 5s for finger to be placed.
+d.	If valid, turns off the led and calls appropriate function.
+e.	If not, returns an error “invalid ID” to be displayed on the log.
+The function can be called again to restart this operation.
+**************************************************************************/
 void CheckFingerPrint(void)
 {
    uint32_t i=0,Value=1,error=0;
@@ -384,7 +374,7 @@ void CheckFingerPrint(void)
 #endif
             error+=1;
         }
-        if(error>50)
+        if(error>20)
             {
                 CommandSend(0,CMD_CMOS_LED);
                 CommandResponse(CMD_CMOS_LED);
@@ -409,6 +399,10 @@ void CheckFingerPrint(void)
 #else
         LOG_INFO("Invalid ID\n");
         LOG_INFO("LED======\n");
+        CommandSend(0,CMD_CMOS_LED);
+        CommandResponse(CMD_CMOS_LED);
+        ButtonFlag=0;
+        return;
 #endif
     }
     else
@@ -418,9 +412,11 @@ void CheckFingerPrint(void)
    #else
        LOG_INFO("Valid ID\n");
    #endif
+       CommandSend(0,CMD_CMOS_LED);
+       CommandResponse(CMD_CMOS_LED);
       }
-        CommandSend(0,CMD_CMOS_LED);
-        CommandResponse(CMD_CMOS_LED);
+
+
 
 #if(TIVA_C == NO)
         if(ButtonFlag==BUTTON0)Button1();//LOG_INFO("Smoke Override\n");
@@ -428,4 +424,6 @@ void CheckFingerPrint(void)
 #endif
         return;
     }
+
+
 
