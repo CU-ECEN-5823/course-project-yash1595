@@ -99,6 +99,8 @@ char StringToDisplay[20];
 
 uint16 primary_address = 0;
 uint8 NumOfConn = 0;
+
+uint8_t oob_array[16]={1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16};
 uint16_t resp;
 
 char print[3];

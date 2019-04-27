@@ -68,3 +68,40 @@ void gpioSetDisplayExtcomin(bool high)
 	else
 		GPIO_PinOutClear(gpioPortD,13);
 }
+
+//void GPIO_ODD_IRQHandler(void)
+//{
+//	uint32_t iflags;
+//
+//	/* Get all odd interrupts. */
+//	iflags = GPIO_IntGetEnabled() & 0x0000AAAA;
+//
+//	CORE_DECLARE_IRQ_STATE;
+//	CORE_ENTER_CRITICAL();
+//		ButtonToggle=GPIO_PinInGet(gpioPortF,7);
+//		mask |= button_event;
+//	CORE_EXIT_CRITICAL();
+//	GPIO_IntClear(iflags);
+//
+//	gecko_external_signal(mask);
+//}
+//
+//void GPIO_EVEN_IRQHandler(void)
+//{
+//  uint32_t iflags;
+//
+//  /* Get all even interrupts. */
+//	iflags = GPIO_IntGetEnabled() & 0x00005555;
+//
+//	/* Clean only even interrupts. */
+//	CORE_DECLARE_IRQ_STATE;
+//	CORE_ENTER_CRITICAL();
+//		ButtonToggle=GPIO_PinInGet(gpioPortF,6);
+//		mask |= button_event;
+//	CORE_EXIT_CRITICAL();
+//	GPIO_IntClear(iflags);
+//
+//	gecko_external_signal(mask);
+//}
+
+

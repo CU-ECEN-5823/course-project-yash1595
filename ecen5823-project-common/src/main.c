@@ -11,6 +11,9 @@ extern void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt);
 
 int main(void)
 {
+
+  // Initialize stack
+
 	TimerInitialize();
 
 	gecko_main_init();
@@ -25,7 +28,11 @@ int main(void)
 
 	initADC();
 
+	//gecko_init(&config);
 
+//	SLEEP_InitEx(NULL);
+
+  /* Infinite loop */
 
   while (1) {
 	  struct gecko_cmd_packet *evt = gecko_wait_event();
@@ -33,5 +40,7 @@ int main(void)
 	if (pass) {
 		handle_gecko_event(BGLIB_MSG_ID(evt->header), evt);
 	}
+	//SLEEP_Sleep();
+	//gecko_cmd_system_halt(1);
   };
 }

@@ -170,10 +170,6 @@ void set_device_name(bd_addr *DeviceAddress)
  LOG_INFO("Device: '%s':[TIME]%f\n", StringToDisplay,Logging());
 }
 
-/****************************************************************************
- * @brief: Initializes LPN node by calling gecko_cmd_mesh_lpn_init()
- * 		   gecko_cmd_mesh_lpn_init(),gecko_cmd_mesh_lpn_establish_friendship().
- ****************************************************************************/
 void lpn_init(void)
 {
     struct gecko_msg_mesh_lpn_init_rsp_t *pLPNInit = gecko_cmd_mesh_lpn_init();//friend_node_init();

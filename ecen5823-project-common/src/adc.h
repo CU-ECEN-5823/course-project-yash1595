@@ -2,7 +2,7 @@
  * adc.h
  *
  *  Created on: Apr 21, 2019
- *      Author: raj
+ *      Author: yashm
  */
 
 #ifndef SRC_ADC_H_
@@ -15,8 +15,12 @@
 #include "em_device.h"
 #include "em_emu.h"
 #include "em_core.h"
+
 #include "em_prs.h"
+
 #include "em_timer.h"
+
+
 #include "em_device.h"
 #include "em_chip.h"
 #include "em_cmu.h"

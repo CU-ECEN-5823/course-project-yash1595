@@ -7,24 +7,16 @@
 
 #include "smoke.h"
 
-
-/*********************************************
- * @brief: Sets flag to false to be used when
- * 		   Smoke alert is to be set.
- *********************************************/
 void SmokeInit(void)
 {
 	WarnFlag=false;
 }
 
-/**********************************************
- * @brief: Reads ADC value. Triggers when > 2V.
- **********************************************/
 void SmokeRead(void)
 {
 	static uint32_t i=0;
 	WarnFlag=false;
-	for(i=0;i<1;i+=1)
+	for(i=0;i<100;i+=1)
 	{
 		ADCSample();
 		WaitForFlag();
