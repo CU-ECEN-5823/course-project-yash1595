@@ -6,39 +6,6 @@
  */
 
 #include "buzzer.h"
-//
-//void BuzzerInit(void)
-//{
-//	GPIO_PinModeSet(gpioPortF,3,gpioModePushPull,true);
-//	BuzzerOff();
-//}
-//
-//void Buzzer(uint32_t ring)
-//{
-////	static uint8_t i=0;
-////	for(i=0;i<ring;i+=1)
-////	{
-////		GPIO_PinOutSet(gpioPortF,3);
-////		BlockWait(1500);
-////		GPIO_PinOutClear(gpioPortF,3);
-////		BlockWait(1500);
-////	}
-//	GPIO_PinOutSet(gpioPortF,3);
-//}
-//
-//void BuzzerOff(void)
-//{
-//	GPIO_PinOutClear(gpioPortF,3);
-//}
-
-/*
- * buzzer.c
- *
- *  Created on: Apr 9, 2019
- *      Author: yashm
- */
-
-#include "buzzer.h"
 
 #define PWM_FREQ 1000
 
