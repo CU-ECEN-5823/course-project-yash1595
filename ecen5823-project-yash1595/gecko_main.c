@@ -52,6 +52,7 @@
 uint32_t Trans_ID = 0;
 uint16_t ADDRESS=0;
 
+char persistent_data[100];
 
 const char* ButtonState[] = {"Button Pressed","Button Released"};
 
@@ -192,12 +193,12 @@ void Button1(void)		//DoorOpen PB0 Generic On/Off
 	if(resp)
 	{
 		LOG_INFO("Smoke Unicast Set Failed with %x\n", resp);
-		displayPrintf(DISPLAY_ROW_TEMP3, "Unicast Failed");
+//		displayPrintf(DISPLAY_ROW_TEMP3, "Unicast Failed");
 	}
 	else
 	{
 		LOG_INFO("Smoke Unicast Set Succeeded\n");
-		displayPrintf(DISPLAY_ROW_TEMP3, "Unicast Passed");
+//		displayPrintf(DISPLAY_ROW_TEMP3, "Unicast Passed");
 	}
 	button_flag = 0;
 	ButtonFlag=0;
@@ -264,6 +265,7 @@ void set_device_name(bd_addr *DeviceAddress)
 
  sprintf(StringToDisplay, "Publisher %x:%x", DeviceAddress->addr[1], DeviceAddress->addr[0]);
  displayPrintf(DISPLAY_ROW_NAME,"Publisher");
+ displayPrintf(1,"PB1:%d,PB0:%d",button_count[0],button_count[1]);
  displayPrintf(DISPLAY_ROW_BTADDR2,"5823Pub%02x:%02x",DeviceAddress->addr[1],DeviceAddress->addr[0]);
 
   resp = gecko_cmd_gatt_server_write_attribute_value(gattdb_device_name, 0, strlen(StringToDisplay), (uint8 *)StringToDisplay)->result;
@@ -429,14 +431,8 @@ case gecko_evt_mesh_node_provisioned_id:
 	ElementID = 0;
 	mesh_lib_init(malloc, free, 8);
 	LOG_INFO("Node provisioned with Address:%x:[TIME]%f\n", evt->data.evt_mesh_node_provisioned.address,Logging());
+	snprintf(persistent_data,sizeof(persistent_data),"PB1:%d,PB0:%d",button_count[0],button_count[1]);
 	displayPrintf(DISPLAY_ROW_CONNECTION,"Provisioned");
-#if (FRIEND_NODE==true)
-//	struct gecko_msg_mesh_friend_init_rsp_t *pFriendInit = gecko_cmd_mesh_friend_init();
-//	if(pFriendInit->result)
-//			LOG_INFO("Error Init friend node\n");
-//	else
-//	  LOG_INFO("Init friend node\n");
-#endif
 	break;
 
 /****************************************************************************************
@@ -560,12 +556,12 @@ case gecko_evt_mesh_generic_client_server_status_id:
 	if(resp)
 	{
 		LOG_INFO("Smoke Unicast Set Failed with %x\n", resp);
-		displayPrintf(DISPLAY_ROW_TEMP3, "Unicast Failed");
+//		displayPrintf(DISPLAY_ROW_TEMP3, "Unicast Failed");
 	}
 	else
 	{
 		LOG_INFO("Smoke Unicast Set Succeeded\n");
-		displayPrintf(DISPLAY_ROW_TEMP3, "Unicast Passed");
+//		displayPrintf(DISPLAY_ROW_TEMP3, "Unicast Passed");
 	}
 	Buzzer(254);
   }
@@ -577,40 +573,6 @@ case gecko_evt_mesh_generic_client_server_status_id:
 case gecko_evt_system_external_signal_id:
   LOG_INFO("External ID");
   DetectEvent = evt->data.evt_system_external_signal.extsignals;
-  if(DetectEvent & update_display)
-  {
-//	CORE_DECLARE_IRQ_STATE;
-//	CORE_ENTER_CRITICAL();
-//		mask &= ~update_display;        //Clear the Event Mask
-//		if(ButtonFlag!=0)
-//			CheckFingerPrint();
-//		EnableGPIOInterrupts();
-//	CORE_EXIT_CRITICAL();
-//	displayUpdate();
-//
-//	/* Clears display after 5s. */
-//	if(clear_count%5==0)
-//	{
-//		clearDisplay();
-//		uint32_t val1;
-//		uint32_t val2;
-//
-////		/* Displays stored button counts.*/
-////		struct gecko_msg_flash_ps_load_rsp_t *response_1=gecko_cmd_flash_ps_load(0x4000);
-////		if(response_1->result)
-////		{
-////			LOG_INFO("ERROR LOADING VALUES");
-////		}
-////		else
-////		{
-////			LOG_INFO("Button1:%d",response_1->value.data[0]);//,response_1->value[2]<<16,response_1->value[1]<<8,response_1->value[0]);
-////			LOG_INFO("Button2:%d",response_1->value.data[1]);
-////		}
-//		clear_count=0;
-//	}
-//	else
-//		clear_count+=1;
-  }
 
   if(DetectEvent & button_event)
   {
@@ -631,6 +593,7 @@ case gecko_evt_system_external_signal_id:
 		{
 			LOG_INFO("Button1:%d",response_1->value.data[0]);
 			LOG_INFO("Button2:%d",response_1->value.data[1]);
+			displayPrintf(1,"PB1:%d,PB0:%d",response_1->value.data[0],response_1->value.data[1]);
 		}
 
 	CORE_EXIT_CRITICAL();
