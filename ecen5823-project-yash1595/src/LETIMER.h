@@ -62,6 +62,11 @@
 //#define button_event2	(64)
 #define ButtonMask	(0x40)
 
+
+#define FRIEND_NODE	true
+
+
+
  /************************* Functions ***************************/
  void TimerInitialize(void);
 

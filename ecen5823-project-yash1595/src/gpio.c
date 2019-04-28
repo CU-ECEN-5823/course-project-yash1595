@@ -118,3 +118,11 @@ void GPIO_EVEN_IRQHandler(void)
 }
 
 
+/****************************************************************************************
+* @brief:	ISR for enabling button interrupts.
+*****************************************************************************************/
+void EnableGPIOInterrupts(void)
+{
+    NVIC_EnableIRQ(GPIO_EVEN_IRQn);
+    NVIC_EnableIRQ(GPIO_ODD_IRQn);
+}

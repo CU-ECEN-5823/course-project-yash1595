@@ -287,6 +287,7 @@ void gecko_main_init()
 
   initDefines();
 
+
   EnableGPIOInterrupts();
 
   FingerPrintInit();
@@ -334,11 +335,13 @@ switch (evt_id) {
         	  button_count[1]=response_1->value.data[1];
           }
           LOG_INFO("System Boot ID\n");
+#if (FRIEND_NODE==true)
           struct gecko_msg_system_get_bt_address_rsp_t *Device_Addr_Struct = gecko_cmd_system_get_bt_address();
           set_device_name(&Device_Addr_Struct->address);
           resp = gecko_cmd_mesh_node_init()->result;
           if(resp != 0)
             LOG_INFO("Error: 0x%x:[TIME]%f\n", resp,Logging());
+#endif
         }
       break;
 
@@ -380,6 +383,7 @@ switch (evt_id) {
 *********************************************************************/
 case gecko_evt_mesh_node_initialized_id:
 	LOG_INFO("node initialized:[TIME]%f\n",Logging());
+#if (FRIEND_NODE==true)
 	resp = gecko_cmd_mesh_generic_client_init()->result;
     if(resp)
     {
@@ -406,6 +410,7 @@ case gecko_evt_mesh_node_initialized_id:
 	  LOG_INFO("Unprovisioned Beaconing Started...:[TIME]%f\n",Logging());
 	  gecko_cmd_mesh_node_start_unprov_beaconing(0x3);
 	}
+#endif
 	break;
 
 /*******************************************************************
@@ -425,11 +430,13 @@ case gecko_evt_mesh_node_provisioned_id:
 	mesh_lib_init(malloc, free, 8);
 	LOG_INFO("Node provisioned with Address:%x:[TIME]%f\n", evt->data.evt_mesh_node_provisioned.address,Logging());
 	displayPrintf(DISPLAY_ROW_CONNECTION,"Provisioned");
-	struct gecko_msg_mesh_friend_init_rsp_t *pFriendInit = gecko_cmd_mesh_friend_init();
-	if(pFriendInit->result)
-			LOG_INFO("Error Init friend node\n");
-	else
-	  LOG_INFO("Init friend node\n");
+#if (FRIEND_NODE==true)
+//	struct gecko_msg_mesh_friend_init_rsp_t *pFriendInit = gecko_cmd_mesh_friend_init();
+//	if(pFriendInit->result)
+//			LOG_INFO("Error Init friend node\n");
+//	else
+//	  LOG_INFO("Init friend node\n");
+#endif
 	break;
 
 /****************************************************************************************
@@ -653,11 +660,11 @@ void initDefines(void)
 	GPIO_PinOutSet(gpioPortD,12);
 }
 
-/****************************************************************************************
-* @brief:	ISR for enabling button interrupts.
-*****************************************************************************************/
-void EnableGPIOInterrupts(void)
-{
-    NVIC_EnableIRQ(GPIO_EVEN_IRQn);
-    NVIC_EnableIRQ(GPIO_ODD_IRQn);
-}
+///****************************************************************************************
+//* @brief:	ISR for enabling button interrupts.
+//*****************************************************************************************/
+//void EnableGPIOInterrupts(void)
+//{
+//    NVIC_EnableIRQ(GPIO_EVEN_IRQn);
+//    NVIC_EnableIRQ(GPIO_ODD_IRQn);
+//}
