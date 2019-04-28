@@ -1,5 +1,8 @@
 # course-project-yash1595
-Google Drive Link: https://drive.google.com/drive/u/1/folders/1Rsp3ZKrzb119bpztJ2eayQ0_IeMvYS64  
+Google Drive Link Group: https://drive.google.com/open?id=1uSyhBe6-ZtO5ROpp-XPXhYPLml9Igsld
+
+Google Drive Individual: https://drive.google.com/open?id=13wolL8nQqu0AM7txAJB04Sq17zJb1fEO
+
 Project Source:    https://github.com/CU-ECEN-5823/assignment-10-bluetooth-mesh-yash1595
 Provisioner Code Link: https://github.com/yash1595/ecen5823-provisioner-update
 
