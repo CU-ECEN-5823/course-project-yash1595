@@ -18,12 +18,10 @@
  ******************************************************************************/
 
 
-/******************************************************************************
- * Sensor:
- * 		   @Name: MQ2 smoke sensor
- *@communication: ADC
- *		   @pins: P7 - ADC | VCC - 3.3 | GND
- *******************************************************************************/
+/*******************************************************************************
+ * COMMON: This code is common between Raj Lavingia and Yash Gupte - Project
+ * Partners.
+ ******************************************************************************/
 
 #include "src/gpio.h"
 #include "native_gecko.h"
@@ -486,6 +484,7 @@ case gecko_evt_system_external_signal_id:
         displayUpdate();
 		static struct gecko_msg_flash_ps_save_rsp_t *save_resp;
     static struct gecko_msg_flash_ps_load_rsp_t *load_resp;
+    //PINON
   	load_resp=gecko_cmd_flash_ps_load(0x4000);
   	if(load_resp->result==0)
   		LOG_INFO("Override Counts:%d",load_resp->value.data[0]);
@@ -493,7 +492,8 @@ case gecko_evt_system_external_signal_id:
   		LOG_INFO("Error loading\n");
   	clearDisplay();
 		if(OverrideFlag==false)
-		{
+		{		//ONNNNNNNNNNNN
+			//GPIO_PinOutClear(gpioPortD,12);
   				SmokeRead();
   				if(WarnFlag==true)
   				{

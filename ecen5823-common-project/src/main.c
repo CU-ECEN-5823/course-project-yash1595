@@ -24,7 +24,7 @@ int main(void)
 
 	displayInit();
 
-	Button_Init();
+//	Button_Init();
 
 	initADC();
 
@@ -33,6 +33,13 @@ int main(void)
 //	SLEEP_InitEx(NULL);
 
   /* Infinite loop */
+
+//	GPIO_PinOutSet(gpioPortD,12);
+//	while(1){
+//	ADCSample();
+//	WaitForFlag();
+//	LOG_INFO("Millivolts:%d",millivolts);
+//	}
 
   while (1) {
 	  struct gecko_cmd_packet *evt = gecko_wait_event();

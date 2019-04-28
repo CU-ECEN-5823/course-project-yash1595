@@ -26,19 +26,22 @@ void gpioInit()
   	GPIO_PinModeSet(PortB0, PinB0, gpioModeInput, false);
   	GPIO_PinModeSet(PortB1, PinB1, gpioModeInput, false);
 
+  	GPIO_PinModeSet(gpioPortD, 12, gpioModePushPull, false);
+  	GPIO_PinOutClear(gpioPortD,12);
+
 }
 
-void Button_Init(void)
-{
-	uint32_t int_clear;
-	int_clear = GPIO_IntGet();
-	GPIO_IntClear(int_clear);
-	GPIO_IntConfig(PortB0, PinB0, false, true, true);
-
-	int_clear = GPIO_IntGet();
-	GPIO_IntClear(int_clear);
-	GPIO_IntConfig(PortB1,PinB1, false, true, true);
-}
+//void Button_Init(void)
+//{
+//	uint32_t int_clear;
+//	int_clear = GPIO_IntGet();
+//	GPIO_IntClear(int_clear);
+//	GPIO_IntConfig(PortB0, PinB0, false, true, true);
+//
+//	int_clear = GPIO_IntGet();
+//	GPIO_IntClear(int_clear);
+//	GPIO_IntConfig(PortB1,PinB1, false, true, true);
+//}
 
 void gpioLed0SetOn()
 {
@@ -69,39 +72,5 @@ void gpioSetDisplayExtcomin(bool high)
 		GPIO_PinOutClear(gpioPortD,13);
 }
 
-//void GPIO_ODD_IRQHandler(void)
-//{
-//	uint32_t iflags;
-//
-//	/* Get all odd interrupts. */
-//	iflags = GPIO_IntGetEnabled() & 0x0000AAAA;
-//
-//	CORE_DECLARE_IRQ_STATE;
-//	CORE_ENTER_CRITICAL();
-//		ButtonToggle=GPIO_PinInGet(gpioPortF,7);
-//		mask |= button_event;
-//	CORE_EXIT_CRITICAL();
-//	GPIO_IntClear(iflags);
-//
-//	gecko_external_signal(mask);
-//}
-//
-//void GPIO_EVEN_IRQHandler(void)
-//{
-//  uint32_t iflags;
-//
-//  /* Get all even interrupts. */
-//	iflags = GPIO_IntGetEnabled() & 0x00005555;
-//
-//	/* Clean only even interrupts. */
-//	CORE_DECLARE_IRQ_STATE;
-//	CORE_ENTER_CRITICAL();
-//		ButtonToggle=GPIO_PinInGet(gpioPortF,6);
-//		mask |= button_event;
-//	CORE_EXIT_CRITICAL();
-//	GPIO_IntClear(iflags);
-//
-//	gecko_external_signal(mask);
-//}
 
 
