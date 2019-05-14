@@ -1,4 +1,4 @@
-# course-project-yash1595
+# Bluetooth Mesh implementation in Industrial Set-up	
 Google Drive Link Group: https://drive.google.com/open?id=1uSyhBe6-ZtO5ROpp-XPXhYPLml9Igsld  
 
 Google Drive Individual: https://drive.google.com/open?id=13wolL8nQqu0AM7txAJB04Sq17zJb1fEO  
