@@ -17,6 +17,28 @@
  *
  ******************************************************************************/
 
+/******************************************************************************
+ * COMMON : adc.c,adc.h and PWM_Init() are common files between Yash Gupte and
+ * 			Raj Lavingia.
+ ******************************************************************************/
+
+/******************************************************************************
+ * Sensor:
+ * 		   @Name: Finger-Print sensor
+ *@communication: UART
+ *		   @pins: P30 - TX | P32- RX | VCC - 3.3 | GND
+ *	_________________________________________________________________________
+ *	Actuator:
+ *	 	   @Name: Buzzer
+ *@communication: PWM
+ *		   @pins: P12 - PWM | GND
+ *___________________________________________________________________________
+ *_LED:
+ *	 	   @Name: Green LED
+ *@communication: GPIO
+ *		   @pins: P8 - +ve end | GND  - -ve end
+ *******************************************************************************/
+
 #include "src/gpio.h"
 #include "native_gecko.h"
 #include "src/display.h"
@@ -24,13 +46,17 @@
 #include "src/Global_Defines.h"
 #include "src/finger_print.h"
 #include "src/buzzer.h"
+#include "src/LED.h"
+#include "src/display.h"
 
 uint32_t Trans_ID = 0;
+uint16_t ADDRESS=0;
 
+char persistent_data[100];
 
 const char* ButtonState[] = {"Button Pressed","Button Released"};
 
-// bluetooth stack heap
+
 #define MAX_CONNECTIONS 2
 
 uint8_t bluetooth_stack_heap[DEFAULT_BLUETOOTH_HEAP(MAX_CONNECTIONS) + BTMESH_HEAP_SIZE + 1760];
@@ -52,11 +78,11 @@ static gecko_bluetooth_ll_priorities linklayer_priorities = GECKO_BLUETOOTH_PRIO
 // bluetooth stack configuration
 extern const struct bg_gattdb_def bg_gattdb_data;
 
-// Flag for indicating DFU Reset must be performed
 uint8_t boot_to_dfu = 0;
 
 const gecko_configuration_t config =
 {
+  .sleep.flags=SLEEP_FLAGS_DEEP_SLEEP_ENABLE,
   .bluetooth.max_connections = MAX_CONNECTIONS,
   .bluetooth.max_advertisers = MAX_ADVERTISERS,
   .bluetooth.heap = bluetooth_stack_heap,
@@ -108,10 +134,6 @@ void gecko_bgapi_classes_init_server_friend(void)
   gecko_bgapi_class_mesh_friend_init();
 }
 
-
-/**
- * See main function list in soc-btmesh-switch project file
- */
 void gecko_bgapi_classes_init_client_lpn(void)
 {
 
@@ -119,14 +141,14 @@ void gecko_bgapi_classes_init_client_lpn(void)
   gecko_bgapi_class_system_init();
   gecko_bgapi_class_le_gap_init();
   gecko_bgapi_class_le_connection_init();
-  gecko_bgapi_class_gatt_init();//Additional
+  gecko_bgapi_class_gatt_init();
   gecko_bgapi_class_gatt_server_init();
-  //  gecko_bgapi_class_endpoint_init();//not found in native_gecko.h
+  //  gecko_bgapi_class_endpoint_init();
   gecko_bgapi_class_hardware_init();
   gecko_bgapi_class_flash_init();
   gecko_bgapi_class_test_init();
-  //gecko_bgapi_class_sm_init();//for oob
-  mesh_native_bgapi_init();     //Additional
+  //gecko_bgapi_class_sm_init();
+  mesh_native_bgapi_init();
   gecko_bgapi_class_mesh_node_init();
   //gecko_bgapi_class_mesh_prov_init();
   gecko_bgapi_class_mesh_proxy_init();
@@ -142,130 +164,85 @@ void gecko_bgapi_classes_init_client_lpn(void)
   //gecko_bgapi_class_mesh_friend_init();
 }
 
-
-void Button1(void)
+/****************************************************************************************
+ * @brief: This function is a response of a valid finger-print after pressing PB1. The
+ * 			function sends a uni-cast message to LPN-1 indicating Door Open. It also updates
+ * 			the persistent data.
+ * 	**************************************************************************************/
+void Button1(void)		//DoorOpen PB0 Generic On/Off
 {
-	 static struct mesh_generic_state	current;
+	static struct mesh_generic_state	current;
 	LOG_INFO("Door Open Send:[TIME]%f\n",ButtonState[ButtonToggle],Logging());  //display printf state.
-	    	       displayPrintf(DISPLAY_ROW_ACTION,"Door Open");
-	    	 		errorcode_t	resp;
-	    	 		Trans_ID += 1;
-	    	 		current.kind = mesh_generic_state_on_off;
-	    	 		current.on_off.on = 1;
+    displayPrintf(DISPLAY_ROW_ACTION,"Door Open");
+	errorcode_t	resp;
+	Trans_ID += 1;
+	current.kind = mesh_generic_state_on_off;
+	current.on_off.on = DOOROPEN;
+	LOG_INFO("Sent to: %d",ADDRESS);
+	resp = mesh_lib_generic_client_set(
+			MESH_GENERIC_ON_OFF_CLIENT_MODEL_ID,
+			0,
+			ADDRESS,
+			appkeyindex,
+			Trans_ID,
+			&current,
+			false,
+			false,
+			false);
 
-//	    	 		static uint8_t i=0;
-//	    	 		for(i=0;i<5;++i)
-//	    	 		{
-//	    	 			resp = mesh_lib_generic_client_set(
-//	    	 				    	 				MESH_GENERIC_ON_OFF_CLIENT_MODEL_ID,
-//	    	 				    	 				0,
-//	    	 				    	 				3,
-//	    	 				    	 				appkeyindex,
-//	    	 				    	 				Trans_ID,
-//	    	 				    	 				&current,
-//	    	 				    	 				false,
-//	    	 				    	 				false,
-//	    	 				    	 				false);
-//
-//	    	 				    	 		if(resp)
-//	    	 				    	 		{
-//	    	 				    	 			LOG_INFO("Smoke Unicast Set Failed with %x\n", resp);
-//	    	 				    	 			displayPrintf(DISPLAY_ROW_TEMP3, "Unicast Failed");
-//	    	 				    	 		}
-//	    	 				    	 		else
-//	    	 				    	 		{
-//	    	 				    	 			LOG_INFO("Smoke Unicast Set Succeeded\n");
-//	    	 				    	 			displayPrintf(DISPLAY_ROW_TEMP3, "Unicast Passed");
-//	    	 				    	 		}
-//	    	 				    	 		button_flag = 0;
-//	    	 				    	 		ButtonFlag=0;
-//	    	 		}
-	    	 		resp = mesh_lib_generic_client_set(
-	    	 				MESH_GENERIC_ON_OFF_CLIENT_MODEL_ID,
-	    	 				0,
-	    	 				2,
-	    	 				appkeyindex,
-	    	 				Trans_ID,
-	    	 				&current,
-	    	 				false,
-	    	 				false,
-	    	 				false);
-
-	    	 		if(resp)
-	    	 		{
-	    	 			LOG_INFO("Smoke Unicast Set Failed with %x\n", resp);
-	    	 			displayPrintf(DISPLAY_ROW_TEMP3, "Unicast Failed");
-	    	 		}
-	    	 		else
-	    	 		{
-	    	 			LOG_INFO("Smoke Unicast Set Succeeded\n");
-	    	 			displayPrintf(DISPLAY_ROW_TEMP3, "Unicast Passed");
-	    	 		}
-	    	 		button_flag = 0;
-	    	 		ButtonFlag=0;
-	    	 		EnableGPIOInterrupts();
-	    	 		//gecko_cmd_hardware_set_soft_timer(32768, buttonID,1);
+	if(resp)
+	{
+		LOG_INFO("Smoke Unicast Set Failed with %x\n", resp);
+//		displayPrintf(DISPLAY_ROW_TEMP3, "Unicast Failed");
+	}
+	else
+	{
+		LOG_INFO("Smoke Unicast Set Succeeded\n");
+//		displayPrintf(DISPLAY_ROW_TEMP3, "Unicast Passed");
+	}
+	button_flag = 0;
+	ButtonFlag=0;
+	button_count[1]+=1;
+	struct gecko_msg_flash_ps_save_rsp_t *response = gecko_cmd_flash_ps_save(0x4000,2,&button_count[0]);
+	if(response->result)
+	{
+		LOG_INFO("Error:%d",response->result);
+	}
+	EnableGPIOInterrupts();
 }
 
+/****************************************************************************************
+ * @brief: This function is a response of a valid finger-print after pressing PB0. The
+ * 		   function sends a publishes a message to all nodes indicating Override.
+ * 	**************************************************************************************/
 void Button2(void)
 {
 	static struct mesh_generic_state current;
-	 LOG_INFO("%Override Send:[TIME]%f\n",ButtonState[ButtonToggle],Logging());  //display printf state.
-	    	        displayPrintf(DISPLAY_ROW_ACTION,"Override");
-	    	  		errorcode_t	resp;
-	    	  		Trans_ID += 1;
-	    	  		current.kind = mesh_generic_state_on_off;
-	    	  		current.on_off.on = 0;
+	LOG_INFO("%Override Send:[TIME]%f\n",ButtonState[ButtonToggle],Logging());  //display printf state.
+	BuzzerOff();
+	displayPrintf(DISPLAY_ROW_ACTION,"Override");
+	errorcode_t	resp;
+	Trans_ID += 1;
+	current.kind = mesh_generic_state_level;
+	current.level.level = OVERRIDE;
+	resp = mesh_lib_generic_client_publish(
+			MESH_GENERIC_LEVEL_CLIENT_MODEL_ID,
+			0,
+			Trans_ID,
+			&current,
+			false,
+			false,
+			false); //resp not required
 
-//	    	  		static uint8_t i=0;
-//	    	  		for(i=0;i<5;++i)
-//	    	  		{
-//	    	  			resp = mesh_lib_generic_client_publish(
-//	    	  				    	  				MESH_GENERIC_ON_OFF_CLIENT_MODEL_ID,
-//	    	  				    	  				0,
-//	    	  				    	  				Trans_ID,
-//	    	  				    	  				&current,
-//	    	  				    	  				false,
-//	    	  				    	  				false,
-//	    	  				    	  				false); //resp not required
-//
-//	    	  				    	  		if(resp)
-//	    	  				    	  		{
-//	    	  				    	  			LOG_INFO("Smoke Unicast Set Failed with %x\n", resp);
-//	    	  				    	  			displayPrintf(DISPLAY_ROW_TEMP3, "Unicast Failed");
-//	    	  				    	  		}
-//	    	  				    	  		else
-//	    	  				    	  		{
-//	    	  				    	  			LOG_INFO("Smoke Unicast Set Succeeded\n");
-//	    	  				    	  			displayPrintf(DISPLAY_ROW_TEMP3, "Unicast Passed");
-//	    	  				    	  		}
-//	    	  				    	  		button_flag = 0;
-//	    	  				    	  		ButtonFlag=0;
-//	    	  		}
-
-	    	  		resp = mesh_lib_generic_client_publish(
-	    	  				MESH_GENERIC_ON_OFF_CLIENT_MODEL_ID,
-	    	  				0,
-	    	  				Trans_ID,
-	    	  				&current,
-	    	  				false,
-	    	  				false,
-	    	  				false); //resp not required
-
-	    	  		if(resp)
-	    	  		{
-	    	  			LOG_INFO("Smoke Unicast Set Failed with %x\n", resp);
-	    	  			displayPrintf(DISPLAY_ROW_TEMP3, "Unicast Failed");
-	    	  		}
-	    	  		else
-	    	  		{
-	    	  			LOG_INFO("Smoke Unicast Set Succeeded\n");
-	    	  			displayPrintf(DISPLAY_ROW_TEMP3, "Unicast Passed");
-	    	  		}
-	    	  		button_flag = 0;
-	    	  		ButtonFlag=0;
-	    	  		EnableGPIOInterrupts();
-	    	  		//gecko_cmd_hardware_set_soft_timer(32768, buttonID,1);
+	button_flag = 0;
+	ButtonFlag=0;
+	button_count[0]+=1;
+	struct gecko_msg_flash_ps_save_rsp_t *response = gecko_cmd_flash_ps_save(0x4000,2,&button_count[0]);
+	if(response->result)
+	{
+		LOG_INFO("Error:%d",response->result);
+	}
+	EnableGPIOInterrupts();
 }
 
 void initiate_factory_reset(void)
@@ -282,11 +259,13 @@ void initiate_factory_reset(void)
 }
 
 
+
 void set_device_name(bd_addr *DeviceAddress)
 {
 
  sprintf(StringToDisplay, "Publisher %x:%x", DeviceAddress->addr[1], DeviceAddress->addr[0]);
  displayPrintf(DISPLAY_ROW_NAME,"Publisher");
+ displayPrintf(1,"PB1:%d,PB0:%d",button_count[0],button_count[1]);
  displayPrintf(DISPLAY_ROW_BTADDR2,"5823Pub%02x:%02x",DeviceAddress->addr[1],DeviceAddress->addr[0]);
 
   resp = gecko_cmd_gatt_server_write_attribute_value(gattdb_device_name, 0, strlen(StringToDisplay), (uint8 *)StringToDisplay)->result;
@@ -296,7 +275,9 @@ void set_device_name(bd_addr *DeviceAddress)
   LOG_INFO("Device: '%s':[TIME]%f\n", StringToDisplay,Logging());
 }
 
-
+/*********************************************
+ * @brief: Initialize all basic functions
+ *********************************************/
 void gecko_main_init()
 {
 
@@ -308,11 +289,14 @@ void gecko_main_init()
 
   initDefines();
 
+
   EnableGPIOInterrupts();
 
-  FingerPrintInit();	//NEW
+  FingerPrintInit();
 
-  BuzzerInit();			//NEW
+  BuzzerInit();
+
+  InitLED();
 
   linklayer_priorities.scan_max = linklayer_priorities.adv_min + 1;
 
@@ -326,12 +310,14 @@ void gecko_main_init()
 
 void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 {
-  //Additional
     struct gecko_msg_mesh_node_provisioning_failed_evt_t  *prov_fail_evt;
+switch (evt_id) {
 
-
-
-  switch (evt_id) {
+/****************************************************************************************
+ * @brief: 1. If PB0 or PB1 is pressed, with reset button, system goes into factory reset &
+ * 		   	  persistent data will be cleared.
+ * 		   2. Persistent data is read, if invalid, it is reset to 0.
+ * 	**************************************************************************************/
     case gecko_evt_system_boot_id:
     if(!(GPIO_PinInGet(PortB1,PinB1))|| !(GPIO_PinInGet(PortB0,PinB0)))
         {
@@ -339,27 +325,40 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
         }
         else
         {
+          struct gecko_msg_flash_ps_load_rsp_t *response_1=gecko_cmd_flash_ps_load(0x4000);
+          if(response_1->result)
+          {
+        	  button_count[0]=0;
+        	  button_count[1]=0;
+          }
+          else
+          {
+        	  button_count[0]=response_1->value.data[0];
+        	  button_count[1]=response_1->value.data[1];
+          }
           LOG_INFO("System Boot ID\n");
+#if (FRIEND_NODE==true)
           struct gecko_msg_system_get_bt_address_rsp_t *Device_Addr_Struct = gecko_cmd_system_get_bt_address();
           set_device_name(&Device_Addr_Struct->address);
           resp = gecko_cmd_mesh_node_init()->result;
           if(resp != 0)
             LOG_INFO("Error: 0x%x:[TIME]%f\n", resp,Logging());
+#endif
         }
       break;
 
-/////////////////////////////////////////////////////////////////////////////////
+/****************************************************************************************
+* @brief: 1. factoryID   -> Resets all data along with clearing persistent data.
+* 		  2. restartID	 -> System reset.
+* 		  3. provisionID -> Indicates Operations have started after provisioning.
+* 		  4. buttonID	 ->	Enables Button interrupts.
+*****************************************************************************************/
   case gecko_evt_hardware_soft_timer_id:
 
         switch(evt->data.evt_hardware_soft_timer.handle)
         {
           case factoryID:
             gecko_cmd_system_reset(0);
-            break;
-
-          case debounceID:
-            NVIC_EnableIRQ(GPIO_ODD_IRQn);
-            NVIC_EnableIRQ(GPIO_EVEN_IRQn);
             break;
 
           case restartID:
@@ -381,61 +380,64 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
         break;
 
 
-
-/////////////////////////////////////////////////////////////////
+/********************************************************************
+* @brief: Calls friend init if provisioned. If not starts beaconing.
+*********************************************************************/
 case gecko_evt_mesh_node_initialized_id:
-        LOG_INFO("node initialized:[TIME]%f\n",Logging());
-        resp = gecko_cmd_mesh_generic_client_init()->result;
+	LOG_INFO("node initialized:[TIME]%f\n",Logging());
+#if (FRIEND_NODE==true)
+	resp = gecko_cmd_mesh_generic_client_init()->result;
     if(resp)
     {
       LOG_INFO("Client Initialization Failed:[TIME]%f\n",Logging());
       LOG_INFO("[ERROR]CODE: %x:[TIME]%f\n", resp,Logging());
     }
+	struct gecko_msg_mesh_node_initialized_evt_t *PtrData = (struct gecko_msg_mesh_node_initialized_evt_t *)&(evt->data);
+	if(PtrData->provisioned)
+	{
+	  LOG_INFO("Node Provisioned with Address:%x, ivi:%ld:[TIME]%f\n", PtrData->address, PtrData->ivi,Logging());
+	  displayPrintf(DISPLAY_ROW_CONNECTION,"Provisioned");
+	  primary_address = PtrData->address;
+	  ElementID = 0;
+	  mesh_lib_init(malloc, free, 8);
+	  struct gecko_msg_mesh_friend_init_rsp_t *pFriendInit = gecko_cmd_mesh_friend_init();
+	  if(pFriendInit->result)
+		  LOG_INFO("Error Init friend node\n");
+	  else
+		LOG_INFO("Init friend node\n");
+	}
+	else
+	{
+	  LOG_INFO("Node Unprovisioned:[TIME]%f\n",Logging());
+	  LOG_INFO("Unprovisioned Beaconing Started...:[TIME]%f\n",Logging());
+	  gecko_cmd_mesh_node_start_unprov_beaconing(0x3);
+	}
+#endif
+	break;
 
-        struct gecko_msg_mesh_node_initialized_evt_t *PtrData = (struct gecko_msg_mesh_node_initialized_evt_t *)&(evt->data);
-        if(PtrData->provisioned)
-        {
-          LOG_INFO("Node Provisioned with Address:%x, ivi:%ld:[TIME]%f\n", PtrData->address, PtrData->ivi,Logging());
-          displayPrintf(DISPLAY_ROW_CONNECTION,"Provisioned");
-          primary_address = PtrData->address;
-          ElementID = 0;
-          mesh_lib_init(malloc, free, 8);
-          struct gecko_msg_mesh_friend_init_rsp_t *pFriendInit = gecko_cmd_mesh_friend_init();//friend_node_init();
-          if(pFriendInit->result)
-        LOG_INFO("Error Init friend node\n");
-          else
-            LOG_INFO("Init friend node\n");
-        }
-        else
-        {
-          LOG_INFO("Node Unprovisioned:[TIME]%f\n",Logging());
-          LOG_INFO("Unprovisioned Beaconing Started...:[TIME]%f\n",Logging());
-          gecko_cmd_mesh_node_start_unprov_beaconing(0x3);   // (3)enable ADV and GATT provisioning bearer
-        }
-        break;
-
-////////////////////////////////////////////////////////////////////////////
-
-    case gecko_evt_mesh_node_provisioning_started_id:
-        LOG_INFO("Provisioning Started:[TIME]%f\n",Logging());
-        displayPrintf(DISPLAY_ROW_CONNECTION,"Provisioning");
-        break;
+/*******************************************************************
+* @brief: Indicates provisioning has begun.
+*******************************************************************/
+case gecko_evt_mesh_node_provisioning_started_id:
+	LOG_INFO("Provisioning Started:[TIME]%f\n",Logging());
+	displayPrintf(DISPLAY_ROW_CONNECTION,"Provisioning");
+	break;
 
 
-    case gecko_evt_mesh_node_provisioned_id:
+/****************************************************************************************
+* @brief:	Initializes frined_init() when node gets provisioned.
+*****************************************************************************************/
+case gecko_evt_mesh_node_provisioned_id:
+	ElementID = 0;
+	mesh_lib_init(malloc, free, 8);
+	LOG_INFO("Node provisioned with Address:%x:[TIME]%f\n", evt->data.evt_mesh_node_provisioned.address,Logging());
+	snprintf(persistent_data,sizeof(persistent_data),"PB1:%d,PB0:%d",button_count[0],button_count[1]);
+	displayPrintf(DISPLAY_ROW_CONNECTION,"Provisioned");
+	break;
 
-        ElementID = 0;
-
-        mesh_lib_init(malloc, free, 8);
-        LOG_INFO("Node provisioned with Address:%x:[TIME]%f\n", evt->data.evt_mesh_node_provisioned.address,Logging());
-        displayPrintf(DISPLAY_ROW_CONNECTION,"Provisioned");
-        struct gecko_msg_mesh_friend_init_rsp_t *pFriendInit = gecko_cmd_mesh_friend_init();
-        if(pFriendInit->result)
-                LOG_INFO("Error Init friend node\n");
-        else
-          LOG_INFO("Init friend node\n");
-        break;
-
+/****************************************************************************************
+* @brief:	Gets address of the lpn device. It displays "Friend-Node" on the LCD.
+*****************************************************************************************/
 case gecko_evt_mesh_friend_friendship_established_id:
     LOG_INFO("FRIENDSHIP ESTABLISHED\n");
           uint16_t tmp_addr;
@@ -444,8 +446,11 @@ case gecko_evt_mesh_friend_friendship_established_id:
       displayPrintf(DISPLAY_ROW_CONNECTION,"Friend-Node");
     break;
 
+/****************************************************************************************
+* @brief:	Friendship terminated ID.
+*****************************************************************************************/
 case gecko_evt_mesh_friend_friendship_terminated_id:
-	LOG_INFO("");
+	LOG_INFO("Terminated ID");
 	uint16_t reason;
 	reason = evt->data.evt_mesh_friend_friendship_terminated.reason;
 	displayPrintf(DISPLAY_ROW_CONNECTION,"Terminated");
@@ -453,186 +458,176 @@ case gecko_evt_mesh_friend_friendship_terminated_id:
 	break;
 
 
+/****************************************************************************************
+* @brief:	Indicates Friendship established.
+*****************************************************************************************/
 case gecko_evt_mesh_lpn_friendship_established_id:
   LOG_INFO("FRIENDSHIP ESTABLISHED-LPN\n");
   break;
-//////////////////////////////////////////////////////////////
-    case gecko_evt_mesh_node_provisioning_failed_id:
 
-        prov_fail_evt = (struct gecko_msg_mesh_node_provisioning_failed_evt_t  *)&(evt->data);
-        LOG_INFO("provisioning failed, code %x:[TIME]%f\n", prov_fail_evt->result,Logging());
-        displayPrintf(DISPLAY_ROW_CONNECTION,"Provision Fail");
-        gecko_cmd_hardware_set_soft_timer(RESET_TIME, restartID, 1);
-        break;
+/****************************************************************************************
+* @brief:	Resets the system if provisioning failed.
+*****************************************************************************************/
+case gecko_evt_mesh_node_provisioning_failed_id:
+	prov_fail_evt = (struct gecko_msg_mesh_node_provisioning_failed_evt_t  *)&(evt->data);
+	LOG_INFO("provisioning failed, code %x:[TIME]%f\n", prov_fail_evt->result,Logging());
+	displayPrintf(DISPLAY_ROW_CONNECTION,"Provision Fail");
+	gecko_cmd_hardware_set_soft_timer(RESET_TIME, restartID, 1);
+	break;
 
+/****************************************************************************************
+* @brief:	Stores the appkey and netkey.
+*****************************************************************************************/
+case gecko_evt_mesh_node_key_added_id:
+	LOG_INFO("New Key");
+	if(evt->data.evt_mesh_node_key_added.type)
+	  LOG_INFO("Application");
+	else
+	  LOG_INFO("Network");
+	LOG_INFO("is %f\r\n",evt->data.evt_mesh_node_key_added.index,Logging());
 
-    case gecko_evt_mesh_node_key_added_id:
+	if(evt->data.evt_mesh_node_key_added.type == Application_Key_Type)
+	  appkeyindex = evt->data.evt_mesh_node_key_added.index;
+	break;
 
-        LOG_INFO("New Key");
-        if(evt->data.evt_mesh_node_key_added.type)
-          LOG_INFO("Application");
-        else
-          LOG_INFO("Network");
-        LOG_INFO("is %f\r\n",evt->data.evt_mesh_node_key_added.index,Logging());
-
-        if(evt->data.evt_mesh_node_key_added.type == Application_Key_Type)
-          appkeyindex = evt->data.evt_mesh_node_key_added.index;
-        break;
-
-///////////////////////////////////////////////////////////////////////////////////////////////
-
-//    case gecko_evt_mesh_node_model_config_changed_id:
-//    {
-//        LOG_INFO("Model Configuration Changed:[TIME]%f\n",Logging());
-//        gecko_cmd_hardware_set_soft_timer((32768 * ProvisionTimeout), provisionID, 1);
-//        break;
-//    }
-//////////////////////////////////////////////////////////////////////////////////////////////
   case gecko_evt_le_connection_opened_id:
       LOG_INFO("Connection_Opened_ID:[TIME]%f\n",Logging());
       NumOfConn++;
       conn_handle = evt->data.evt_le_connection_opened.connection;
       break;
-//////////////////////////////////////////////////////////////////////////////////////////////
-  case gecko_evt_le_connection_parameters_id: //Usual
-      LOG_INFO("Connection_Parameters_ID:[TIME]%f\n",Logging());
-      break;
 
-  case gecko_evt_le_connection_closed_id:
-      if (boot_to_dfu)
-        gecko_cmd_system_reset(2);
-      break;
+case gecko_evt_le_connection_parameters_id:
+  LOG_INFO("Connection_Parameters_ID:[TIME]%f\n",Logging());
+  break;
 
-//  case gecko_evt_gatt_server_user_write_request_id:
-//      if (evt->data.evt_gatt_server_user_write_request.characteristic == gattdb_ota_control) {
-//        boot_to_dfu = 1;
-//        gecko_cmd_gatt_server_send_user_write_response(
-//          evt->data.evt_gatt_server_user_write_request.connection,
-//          gattdb_ota_control,
-//          bg_err_success);
-//        gecko_cmd_le_connection_close(evt->data.evt_gatt_server_user_write_request.connection);
-//      }
-//      break;
+/****************************************************************************************
+* @brief:	System reset when connection closed.
+*****************************************************************************************/
+case gecko_evt_le_connection_closed_id:
+  if (boot_to_dfu)
+	gecko_cmd_system_reset(2);
+  break;
 
-
-  case gecko_evt_mesh_generic_client_server_status_id:
+/****************************************************************************************
+* @brief:	Event when servers, send data.
+* 			Model_ID is used to detect if it is from ON_OFF model or LEVEL model.
+*****************************************************************************************/
+case gecko_evt_mesh_generic_client_server_status_id:
+  LOG_INFO("Client server status id");
+  static struct mesh_generic_state	current;
+  CORE_DECLARE_IRQ_STATE;
+  LOG_INFO("Received Button State\n");
+  static uint8_t value;
+  uint16_t model_ID = evt->data.evt_mesh_generic_client_server_status.model_id;
+  value=evt->data.evt_mesh_generic_client_server_status.parameters.data[0];
+  LOG_INFO("model id:%x,Value:%d",model_ID,value);
+  if(model_ID == MESH_GENERIC_ON_OFF_CLIENT_MODEL_ID && value==0)
   {
-	  static struct mesh_generic_state	current;
-	  CORE_DECLARE_IRQ_STATE;
-	  LOG_INFO("Received Button State\n");
-	  static uint16_t addr;
-	  static uint8_t value;
-	  addr = evt->data.evt_mesh_generic_client_server_status.server_address;
-	  value=evt->data.evt_mesh_generic_client_server_status.parameters.data[0];
-	  if(addr == 2)
-	  {
-		  CORE_ENTER_CRITICAL();
-			  displayPrintf(DISPLAY_ROW_TEMPVALUE, "LED ON");
-			  GPIO_PinOutSet(gpioPortD,12);
-		  CORE_EXIT_CRITICAL();
-	  }
-	  else if(addr == 3)
-	  {
-		  displayPrintf(DISPLAY_ROW_TEMP2, "SMOKE ALARM");
-//		  Buzzer(100);
-			errorcode_t	resp;
-			Trans_ID += 1;
-			current.kind = mesh_generic_state_on_off;
-			current.on_off.on = 0;
-			resp = mesh_lib_generic_client_set(
-					MESH_GENERIC_ON_OFF_CLIENT_MODEL_ID,
-					0,
-					2,
-					appkeyindex,
-					Trans_ID,
-					&current,
-					false,
-					false,
-					false);
+	  CORE_ENTER_CRITICAL();
+	  ADDRESS = evt->data.evt_mesh_generic_client_server_status.server_address;
+	  CORE_EXIT_CRITICAL();
+  }
+  else if(model_ID == MESH_GENERIC_ON_OFF_CLIENT_MODEL_ID && value==1)
+  {
+	  CORE_ENTER_CRITICAL();
+	  ADDRESS = evt->data.evt_mesh_generic_client_server_status.server_address;
+		  displayPrintf(DISPLAY_ROW_TEMPVALUE, "LED ON");
+		  LEDOn();
+	  CORE_EXIT_CRITICAL();
+  }
+  else
+  {
+	displayPrintf(DISPLAY_ROW_TEMP2, "SMOKE ALARM");
+	errorcode_t	resp;
+	Trans_ID += 1;
+	current.kind = mesh_generic_state_level;
+	current.level.level = SMOKE;
+	resp = mesh_lib_generic_client_set(
+			MESH_GENERIC_LEVEL_CLIENT_MODEL_ID,
+			0,
+			ADDRESS,	//Automatically detect?
+			appkeyindex,
+			Trans_ID,
+			&current,
+			false,
+			false,
+			false);
 
-			if(resp)
-			{
-				LOG_INFO("Smoke Unicast Set Failed with %x\n", resp);
-				displayPrintf(DISPLAY_ROW_TEMP3, "Unicast Failed");
-			}
-			else
-			{
-				LOG_INFO("Smoke Unicast Set Succeeded\n");
-				displayPrintf(DISPLAY_ROW_TEMP3, "Unicast Passed");
-			}
-			Buzzer(100);
-	  }
-//	  displayPrintf(DISPLAY_ROW_TEMPVALUE,ButtonState[value]);
-	  break;
+	if(resp)
+	{
+		LOG_INFO("Smoke Unicast Set Failed with %x\n", resp);
+//		displayPrintf(DISPLAY_ROW_TEMP3, "Unicast Failed");
+	}
+	else
+	{
+		LOG_INFO("Smoke Unicast Set Succeeded\n");
+//		displayPrintf(DISPLAY_ROW_TEMP3, "Unicast Passed");
+	}
+	Buzzer(254);
+  }
+  break;
+
+/****************************************************************************************
+* @brief:	Handles external events
+*****************************************************************************************/
+case gecko_evt_system_external_signal_id:
+  LOG_INFO("External ID");
+  DetectEvent = evt->data.evt_system_external_signal.extsignals;
+
+  if(DetectEvent & button_event)
+  {
+	CORE_DECLARE_IRQ_STATE;
+	CORE_ENTER_CRITICAL();
+		mask &= ~button_event;        //Clear the Event Mask
+		if(ButtonFlag!=0)
+			CheckFingerPrint();
+		EnableGPIOInterrupts();
+		clearDisplay();
+		/* Displays stored button counts.*/
+		struct gecko_msg_flash_ps_load_rsp_t *response_1=gecko_cmd_flash_ps_load(0x4000);
+		if(response_1->result)
+		{
+			LOG_INFO("ERROR LOADING VALUES");
+		}
+		else
+		{
+			LOG_INFO("Button1:%d",response_1->value.data[0]);
+			LOG_INFO("Button2:%d",response_1->value.data[1]);
+			displayPrintf(1,"PB1:%d,PB0:%d",response_1->value.data[0],response_1->value.data[1]);
+		}
+
+	CORE_EXIT_CRITICAL();
   }
 
-//
-//    case gecko_evt_mesh_generic_server_client_request_id: //(4) Subscriber -  Server - Receives the button press state
-//        LOG_INFO("evt gecko_evt_mesh_generic_server_client_request_id:TimeStamp=>%f\n",Logging());
-//        uint8_t  var1 = 0;
-//        var1 = evt->data.evt_mesh_generic_server_client_request.parameters.data[0];
-//        LOG_INFO("Button State:%d:TimeStamp=>%f\n",var1,Logging());
-//        displayPrintf(DISPLAY_ROW_ACTION,"%s",ButtonState[var1]);
-//  	break;
-//////////////////////////////////////////////////////////////////////////////
-  case gecko_evt_system_external_signal_id:
-	  LOG_INFO("");
-//	  static struct mesh_generic_state	current;
-      DetectEvent = evt->data.evt_system_external_signal.extsignals;
-       if(DetectEvent & update_display)
-      {
-        CORE_DECLARE_IRQ_STATE;
-        CORE_ENTER_CRITICAL();
-        	mask &= ~update_display;        //Clear the Event Mask
-        CORE_EXIT_CRITICAL();
-        displayUpdate();
-        if(clear_count%5==0)
-        {
-        	clearDisplay();
-        	clear_count=0;
-        }
-        else
-        	clear_count+=1;
-      }
 
-// 	  if(button_flag == 1)Button1();
-// 	  else if(button_flag == 2) Button2();
-
-//       if(DetectEvent & button_event)
-//      {
-//    	LOG_INFO("<<<<<<<<<<<<<<<<<<<HERE>>>>>>>>>>>>>>>>>\n");
-//		CORE_DECLARE_IRQ_STATE;
-//		CORE_ENTER_CRITICAL();
-//			mask &= ~button_event;
-//			CheckFingerPrint();
-//		CORE_EXIT_CRITICAL();
-//		//gecko_cmd_hardware_set_soft_timer(32768, buttonID,1);
-//      }
-       break;
+   break;
   default:
         break;
   }
 }
 
-
+/****************************************************************************************
+* @brief:	Initializes values at time of boot.
+*****************************************************************************************/
 void initDefines(void)
 {
 	button_flag = 0;
     ElementID = 0xffff;
     appkeyindex = 0;
     transaction_id = 0;
-    conn_handle = 0xFF;      /* handle of the last opened LE connection */
-
+    conn_handle = 0xFF;
     StringToDisplay[20];
-
-    primary_address = 0;    /* Address of the Primary Element of the Node */
-    NumOfConn = 0;     		/* number of active Bluetooth connections */
+    primary_address = 0;
+    NumOfConn = 0;
     clear_count=0;
-	GPIO_PinOutSet(gpioPortD,12);	//Keep LED OFF
+	GPIO_PinOutSet(gpioPortD,12);
 }
 
-void EnableGPIOInterrupts(void)
-{
-    NVIC_EnableIRQ(GPIO_EVEN_IRQn);
-    NVIC_EnableIRQ(GPIO_ODD_IRQn);
-}
+///****************************************************************************************
+//* @brief:	ISR for enabling button interrupts.
+//*****************************************************************************************/
+//void EnableGPIOInterrupts(void)
+//{
+//    NVIC_EnableIRQ(GPIO_EVEN_IRQn);
+//    NVIC_EnableIRQ(GPIO_ODD_IRQn);
+//}

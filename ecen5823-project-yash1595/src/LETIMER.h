@@ -62,6 +62,11 @@
 //#define button_event2	(64)
 #define ButtonMask	(0x40)
 
+
+#define FRIEND_NODE	true
+
+
+
  /************************* Functions ***************************/
  void TimerInitialize(void);
 
@@ -83,7 +88,6 @@
  uint8_t ButtonInitiationFlag;
  uint8_t DisplayButtonState;
  uint32_t update_display;
-
  uint8_t clear_count;
  uint8_t button_flag;
 

@@ -9,6 +9,7 @@
 #include <string.h>
 #include "LETIMER.h"
 #include "finger_print.h"
+#include "LED.h"
 
 #define	LED0_port gpioPortF
 #define LED0_pin	4
@@ -26,7 +27,7 @@ void gpioInit()
 
   	GPIO_PinModeSet(PortB0, PinB0, gpioModeInput, false);
   	GPIO_PinModeSet(PortB1, PinB1, gpioModeInput, false);
-  	GPIO_PinModeSet(gpioPortB, 11, gpioModePushPull, false);	//Blue LED
+  	GPIO_PinModeSet(gpioPortD, 12, gpioModePushPull, false);	//Green LED
   	GPIO_DriveStrengthSet(gpioPortB, gpioDriveStrengthWeakAlternateStrong);
 
 }
@@ -83,15 +84,14 @@ void GPIO_ODD_IRQHandler(void)
 	CORE_DECLARE_IRQ_STATE;
 	CORE_ENTER_CRITICAL();
 	LOG_INFO(">>>>>>>>>>>>>>>B1\n");
+		mask |= button_event;
 		ButtonToggle=GPIO_PinInGet(gpioPortF,7);
+		LEDOff();
 		ButtonFlag=BUTTON1;
-		CheckFingerPrint();
-		EnableGPIOInterrupts();
-		//mask |= button_event;
 	CORE_EXIT_CRITICAL();
 	GPIO_IntClear(iflags);
 
-	//gecko_external_signal(mask);
+	gecko_external_signal(mask);
 	//timer 100ms start
 }
 
@@ -107,12 +107,22 @@ void GPIO_EVEN_IRQHandler(void)
 	CORE_DECLARE_IRQ_STATE;
 	CORE_ENTER_CRITICAL();
 	LOG_INFO(">>>>>>>>>>>>>>>B2\n");
+		mask |= button_event;
 		ButtonToggle=GPIO_PinInGet(gpioPortF,6);
+		LEDOff();
 		ButtonFlag=BUTTON0;
-		CheckFingerPrint();
-		EnableGPIOInterrupts();
 	CORE_EXIT_CRITICAL();
 	GPIO_IntClear(iflags);
+	gecko_external_signal(mask);
+
 }
 
 
+/****************************************************************************************
+* @brief:	ISR for enabling button interrupts.
+*****************************************************************************************/
+void EnableGPIOInterrupts(void)
+{
+    NVIC_EnableIRQ(GPIO_EVEN_IRQn);
+    NVIC_EnableIRQ(GPIO_ODD_IRQn);
+}
